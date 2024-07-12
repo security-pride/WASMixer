@@ -1,0 +1,4 @@
+deepminer
+mineray
+seismic
+yara 
