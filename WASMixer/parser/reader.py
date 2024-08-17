@@ -129,11 +129,11 @@ class WasmReader:
 
         data = self.read_bytes()
         try:
-            data.decode('utf-8')
+            data.decode('utf-8', errors='ignore')
         except Exception:
             raise Exception("malformed UTF-8 encoding")
 
-        return str(data, 'utf-8')
+        return str(data, 'utf-8', errors='ignore')
 
     def read_module(self, module: Module):
         if self.remaining() < 4:
@@ -166,16 +166,21 @@ class WasmReader:
 
                 start = self.reader.tell() - w - 1
                 end = self.reader.tell() + n
-                custom_sec, custom_sec_name = self.read_custom_sec(n)
-                module.section_range[SecCustomID].append(SectionRange(start, end, custom_sec_name))
-                module.custom_secs.append(custom_sec)
-                continue
+                if n != 0:
+                    custom_sec, custom_sec_name = self.read_custom_sec(n)
+                    module.section_range[SecCustomID].append(SectionRange(start, end, custom_sec_name))
+                    module.custom_secs.append(custom_sec)
+                    continue
+                else:
+                    module.section_range[SecCustomID].append(SectionRange(start, end, ""))
+                    module.custom_secs.append(CustomSec())
+                    continue
 
             if sec_id > SecDataID:
                 raise Exception("malformed section id: %d" % sec_id)
 
-            if sec_id <= prev_sec_id:
-                raise Exception("junk after last section, id: %d" % sec_id)
+            if sec_id <= prev_sec_id and sec_id != SecCustomID:
+                raise Exception("malformed section id: %d" % sec_id)
             prev_sec_id = sec_id
 
             n, w = decode_var_uint(self.reader, 32)
@@ -320,7 +325,6 @@ class WasmReader:
         return name_data
 
     def read_non_custom_sec(self, sec_id, module, sec_size, byte_count_size):
-
         if sec_id == SecTypeID:
 
             module.section_range[SecTypeID].start = self.reader.tell() - byte_count_size - 1

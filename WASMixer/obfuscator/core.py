@@ -1,22 +1,20 @@
 from WASMixer.obfuscator.utils import *
 
+
 class CodeObfuscator:
 
     def __init__(self, binary):
         self.wasm_binary = binary
 
-    def instr_flatten(self, instr_list, split_num, block_type, func_id, Collatz_func_id=None,
-                      Compute_stack_memory_func_id=None):
+    def instr_flatten(self, instr_list, split_num, block_type, func_id, Collatz_func_id=None):
 
-        # Check whether the function has linear memory
-        stack_length = get_function_memory_stack_length(self.wasm_binary, func_id)
-        if stack_length != 0:
-            global_stack_pointer = self.wasm_binary.add_new_local_to_func(func_id, ValTypeI32)
-            self.wasm_binary.module.code_sec[func_id].expr.insert(1, Instruction(LocalTee, global_stack_pointer))
+        return_exist = False
+        if instr_list[len(instr_list) - 1].opcode == Return:
+            return_exist = True
 
         jump_flag_local = self.wasm_binary.add_new_local_to_func(func_id, ValTypeI32)
 
-        code_blocks = code_block_splitting(self.wasm_binary, instr_list, split_num, func_id)
+        code_blocks, new_local_i32, new_local_i64, new_local_f32, new_local_f64 = code_block_splitting(self.wasm_binary, instr_list, split_num, func_id)
 
         basic_blocks = []
         for cb in code_blocks:
@@ -33,13 +31,14 @@ class CodeObfuscator:
             for instr in bb:
                 if instr.opcode in [Br, BrIf]:
                     instr.args += len(basic_blocks) - _ + 1 + 1
-                elif instr.opcode == BrTable:
-                    for label_id in instr.args.labels:
-                        instr.args.labels[label_id] += len(basic_blocks) - _ + 1 + 1
+                # elif instr.opcode == BrTable:
+                #     for label_id in instr.args.labels:
+                #         instr.args.labels[label_id] += len(basic_blocks) - _ + 1 + 1
+                #     if instr.args.default is not None:
+                #         instr.args.default += len(basic_blocks) - _ + 1 + 1
 
             # Wrap the instructions with block instruction
             basic_blocks[_] = Instruction(Block, BlockArgs(BlockTypeEmpty, bb))
-
 
         for _, bb in enumerate(basic_blocks):
 
@@ -79,12 +78,6 @@ class CodeObfuscator:
                         if param_id != 0:
                             collatz_code.append(Instruction(I32Add))
 
-                    if stack_length != 0:
-                        collatz_code.extend([Instruction(LocalGet, global_stack_pointer),
-                                             Instruction(I32Const, stack_length),
-                                             Instruction(Call, Compute_stack_memory_func_id),
-                                             Instruction(I32Add)])
-
                     collatz_code.extend([
                         Instruction(I32Const, random.randint(1050, 2000)),
                         Instruction(I32Add),
@@ -95,7 +88,7 @@ class CodeObfuscator:
                         Instruction(LocalSet, jump_flag_local),
 
                         # Jump to distribution block
-                        Instruction(Br, len(basic_blocks) - _),
+                        Instruction(Br, len(code_blocks) - _),
                     ])
                     bb.args.instrs.extend(collatz_code)
                 else:
@@ -103,89 +96,84 @@ class CodeObfuscator:
                     bb.args.instrs.append(Instruction(LocalSet, jump_flag_local))
                     bb.args.instrs.append(Instruction(Br, len(code_blocks) - _))
             else:
-                if any((next_id := cb['id']) == code_blocks[_]['id'] + 1 for cb in code_blocks):
+                for next_id, cb in enumerate(code_blocks):
+                    if cb['id'] == (code_blocks[_]['id'] + 1):
+                        param_type_list = block_type.param_types
 
-                    param_type_list = block_type.param_types
+                        if param_type_list != [] and Collatz_func_id is not None:
+                            collatz_code = []
+                            for param_id, param_type in enumerate(param_type_list):
+                                if param_type == 127:
+                                    collatz_code.extend([
+                                        Instruction(LocalGet, param_id),
+                                        Instruction(I32Const, random.randint(1, 1000)),
+                                        Instruction(I32Mul)])
+                                elif param_type == 126:
+                                    collatz_code.extend([
+                                        Instruction(LocalGet, param_id),
+                                        Instruction(I64Const, random.randint(1, 1000)),
+                                        Instruction(I64Mul),
+                                        Instruction(I32WrapI64)])
+                                elif param_type == 125:
+                                    collatz_code.extend([
+                                        Instruction(LocalGet, param_id),
+                                        Instruction(F32Const, random.randint(1, 1000)),
+                                        Instruction(F32Mul),
+                                        Instruction(I32ReinterpretF32)])
+                                elif param_type == 124:
+                                    collatz_code.extend([
+                                        Instruction(LocalGet, param_id),
+                                        Instruction(F64Const, random.randint(1, 1000)),
+                                        Instruction(F64Mul),
+                                        Instruction(I64ReinterpretF64),
+                                        Instruction(I32WrapI64)])
+                                if param_id != 0:
+                                    collatz_code.append(Instruction(I32Add))
 
-                    if param_type_list != [] and Collatz_func_id is not None:
-                        collatz_code = []
-                        for param_id, param_type in enumerate(param_type_list):
-                            if param_type == 127:
+                            if next_id == 0:
                                 collatz_code.extend([
-                                    Instruction(LocalGet, param_id),
-                                    Instruction(I32Const, random.randint(1, 1000)),
-                                    Instruction(I32Mul)])
-                            elif param_type == 126:
-                                collatz_code.extend([
-                                    Instruction(LocalGet, param_id),
-                                    Instruction(I64Const, random.randint(1, 1000)),
-                                    Instruction(I64Mul),
-                                    Instruction(I32WrapI64)])
-                            elif param_type == 125:
-                                collatz_code.extend([
-                                    Instruction(LocalGet, param_id),
-                                    Instruction(F32Const, random.randint(1, 1000)),
-                                    Instruction(F32Mul),
-                                    Instruction(I32ReinterpretF32)])
-                            elif param_type == 124:
-                                collatz_code.extend([
-                                    Instruction(LocalGet, param_id),
-                                    Instruction(F64Const, random.randint(1, 1000)),
-                                    Instruction(F64Mul),
-                                    Instruction(I64ReinterpretF64),
-                                    Instruction(I32WrapI64)])
-                            if param_id != 0:
-                                collatz_code.append(Instruction(I32Add))
+                                    Instruction(I32Const, random.randint(1050, 2000)),
+                                    Instruction(I32Add),
+                                    Instruction(I32Const, random.randint(1, 2000)),
+                                    Instruction(Call, Collatz_func_id),
+                                    Instruction(I32Const, 1),
+                                    Instruction(I32Sub),
+                                    Instruction(LocalSet, jump_flag_local),
 
-                        if stack_length != 0:
-                            collatz_code.extend([Instruction(LocalGet, global_stack_pointer),
-                                                 Instruction(I32Const, stack_length),
-                                                 Instruction(Call, Compute_stack_memory_func_id),
-                                                 Instruction(I32Add)])
-                        if next_id == 0:
-                            collatz_code.extend([
-                                Instruction(I32Const, random.randint(1050, 2000)),
-                                Instruction(I32Add),
-                                Instruction(I32Const, random.randint(1, 2000)),
-                                Instruction(Call, Collatz_func_id),
-                                Instruction(I32Const, 1),
-                                Instruction(I32Sub),
-                                Instruction(LocalSet, jump_flag_local),
+                                    # Jump to distribution block
+                                    Instruction(Br, len(basic_blocks) - _),
+                                ])
+                            elif next_id == 1:
+                                collatz_code.extend([
+                                    Instruction(I32Const, random.randint(1050, 2000)),
+                                    Instruction(I32Add),
+                                    Instruction(I32Const, random.randint(1, 2000)),
+                                    Instruction(Call, Collatz_func_id),
+                                    Instruction(LocalSet, jump_flag_local),
 
-                                # Jump to distribution block
-                                Instruction(Br, len(basic_blocks) - _),
-                            ])
-                        elif next_id == 1:
-                            collatz_code.extend([
-                                Instruction(I32Const, random.randint(1050, 2000)),
-                                Instruction(I32Add),
-                                Instruction(I32Const, random.randint(1, 2000)),
-                                Instruction(Call, Collatz_func_id),
-                                Instruction(LocalSet, jump_flag_local),
+                                    # Jump to distribution block
+                                    Instruction(Br, len(basic_blocks) - _),
+                                ])
+                            # jump flag = next id
+                            else:
+                                collatz_code.extend([
+                                    Instruction(I32Const, random.randint(1050, 2000)),
+                                    Instruction(I32Add),
+                                    Instruction(I32Const, random.randint(1050, 2000)),
+                                    Instruction(Call, Collatz_func_id),
+                                    Instruction(I32Const, next_id - 1),
+                                    Instruction(I32Add),
+                                    Instruction(LocalSet, jump_flag_local),
 
-                                # Jump to distribution block
-                                Instruction(Br, len(basic_blocks) - _),
-                            ])
-                        # jump flag = next id
+                                    # Jump to distribution block
+                                    Instruction(Br, len(basic_blocks) - _),
+                                ])
+
+                            bb.args.instrs.extend(collatz_code)
                         else:
-                            collatz_code.extend([
-                                Instruction(I32Const, random.randint(1050, 2000)),
-                                Instruction(I32Add),
-                                Instruction(I32Const, random.randint(1050, 2000)),
-                                Instruction(Call, Collatz_func_id),
-                                Instruction(I32Const, next_id - 1),
-                                Instruction(I32Add),
-                                Instruction(LocalSet, jump_flag_local),
-
-                                # Jump to distribution block
-                                Instruction(Br, len(basic_blocks) - _),
-                            ])
-
-                        bb.args.instrs.extend(collatz_code)
-                    else:
-                        bb.args.instrs.append(Instruction(I32Const, next_id))
-                        bb.args.instrs.append(Instruction(LocalSet, jump_flag_local))
-                        bb.args.instrs.append(Instruction(Br, len(basic_blocks) - _))
+                            bb.args.instrs.append(Instruction(I32Const, next_id))
+                            bb.args.instrs.append(Instruction(LocalSet, jump_flag_local))
+                            bb.args.instrs.append(Instruction(Br, len(basic_blocks) - _))
 
         # Construct outer blocks
         for _, bb in enumerate(basic_blocks):
@@ -210,24 +198,40 @@ class CodeObfuscator:
                 out_block.args.instrs.append(Instruction(LocalSet, jump_flag_local))
         out_block.args.instrs.append(loop_block)
 
-        # Add random operands at the end to maintain stack balance
+        # Add operands at the end to maintain stack balance
         final_instrs = []
         final_instrs.append(out_block)
-        for i, result_type in enumerate(
-                self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[func_id]].result_types):
-            if result_type == ValTypeI32:
-                final_instrs.append(Instruction(I32Const, random.randint(1, 1000)))
-            elif result_type == ValTypeI64:
-                final_instrs.append(Instruction(I64Const, random.randint(1, 1000)))
-            elif result_type == ValTypeF32:
-                final_instrs.append(
-                    Instruction(F32Const, struct.unpack('f', struct.pack('I', random.randint(0, 2 ** 31 - 1)))[0]))
-            elif result_type == ValTypeF64:
-                final_instrs.append(
-                    Instruction(F64Const, struct.unpack('f', struct.pack('I', random.randint(0, 2 ** 31 - 1)))[0]))
-            else:
-                raise Exception("error")
-        return final_instrs
+
+        if return_exist:
+            for i, result_type in enumerate(
+                    self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[func_id]].result_types):
+                if result_type == ValTypeI32:
+                    final_instrs.append(Instruction(LocalGet, new_local_i32[i]))
+                elif result_type == ValTypeI64:
+                    final_instrs.append(Instruction(LocalGet, new_local_i64[i]))
+                elif result_type == ValTypeF32:
+                    final_instrs.append(Instruction(LocalGet, new_local_f32[i]))
+                elif result_type == ValTypeF64:
+                    final_instrs.append(Instruction(LocalGet, new_local_f64[i]))
+                else:
+                    raise Exception("error")
+
+            final_instrs.append(Instruction(Return))
+            return final_instrs
+        else:
+            for i, result_type in enumerate(
+                    self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[func_id]].result_types):
+                if result_type == ValTypeI32:
+                    final_instrs.append(Instruction(LocalGet, new_local_i32[i]))
+                elif result_type == ValTypeI64:
+                    final_instrs.append(Instruction(LocalGet, new_local_i64[i]))
+                elif result_type == ValTypeF32:
+                    final_instrs.append(Instruction(LocalGet, new_local_f32[i]))
+                elif result_type == ValTypeF64:
+                    final_instrs.append(Instruction(LocalGet, new_local_f64[i]))
+                else:
+                    raise Exception("error")
+            return final_instrs
 
     def alias_disruption(self):
 
@@ -286,12 +290,6 @@ class CodeObfuscator:
                 self.call_to_indirect_call(instr.args.instrs)
 
     def alias_disruption_collatz(self, Collatz_func_id):
-        if Collatz_func_id != None:
-            Compute_stack_memory_func_id = self.wasm_binary.add_function(Compute_stack_memory_functype,
-                                                                         Compute_stack_memory_locals_val,
-                                                                         Compute_stack_memory)
-            if Compute_stack_memory_func_id <= Collatz_func_id:
-                Collatz_func_id += 1
 
         # Get the list of function ids called indirectly before obfuscation
         origin_funcref_list = []
@@ -320,26 +318,19 @@ class CodeObfuscator:
                 func_type = self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[i]]
                 param_type_list = func_type.param_types
 
-                if param_type_list != [] \
-                        and i != (Collatz_func_id - self.wasm_binary.get_import_func_num()) \
-                        and i != (Compute_stack_memory_func_id - self.wasm_binary.get_import_func_num()):
+                if param_type_list != [] and i != (Collatz_func_id - self.wasm_binary.get_import_func_num()):
 
                     stack_length = get_function_memory_stack_length(self.wasm_binary, i)
                     expr = self.wasm_binary.module.code_sec[i].expr
-                    global_stack_pointer = None
-                    if stack_length != 0:
-                        global_stack_pointer = self.wasm_binary.add_new_local_to_func(i, ValTypeI32)
-                        expr.insert(1, Instruction(LocalTee, global_stack_pointer))
 
-                    self.call_to_indirect_call_collatz(expr, Collatz_func_id, Compute_stack_memory_func_id,
-                                                       param_type_list, global_stack_pointer, stack_length)
+                    self.call_to_indirect_call_collatz(expr, Collatz_func_id,
+                                                       param_type_list, stack_length)
 
             self.wasm_binary.modify_table_section(self.wasm_binary.module.table_sec)
             self.wasm_binary.modify_elem_section(self.wasm_binary.module.elem_sec)
             self.wasm_binary.modify_code_section(self.wasm_binary.module.code_sec)
 
-    def call_to_indirect_call_collatz(self, expr, Collatz_func_id, Compute_stack_memory_func_id, param_type_list,
-                                      global_stack_pointer, stack_length):
+    def call_to_indirect_call_collatz(self, expr, Collatz_func_id, param_type_list, stack_length):
         _ = 0
         while _ < len(expr):
             if expr[_].opcode == Call:
@@ -389,11 +380,6 @@ class CodeObfuscator:
                     if param_id != 0:
                         Br_flag_Collatz_template.append(Instruction(I32Add))
 
-                if global_stack_pointer is not None:
-                    Br_flag_Collatz_template.extend([Instruction(LocalGet, global_stack_pointer),
-                                                     Instruction(I32Const, stack_length),
-                                                     Instruction(Call, Compute_stack_memory_func_id),
-                                                     Instruction(I32Add)])
 
                 Br_flag_Collatz_template.extend([
                     Instruction(I32Const, random.randint(1050, 2000)),
@@ -413,8 +399,7 @@ class CodeObfuscator:
             # Recursive call
             elif expr[_].opcode in [Block, Loop]:
                 self.call_to_indirect_call_collatz(expr[_].args.instrs, Collatz_func_id,
-                                                   Compute_stack_memory_func_id,
-                                                   param_type_list, global_stack_pointer, stack_length)
+                                                   param_type_list, stack_length)
                 _ += 1
             else:
                 _ += 1

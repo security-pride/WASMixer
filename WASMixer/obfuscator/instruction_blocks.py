@@ -344,29 +344,3 @@ Xor_shift_instrs_template = [
 ]
 
 Xor_shift_functype = FuncType(0x60, [ValTypeI32], [ValTypeI32])
-
-Compute_stack_memory = [Instruction(LocalGet, 0),
-                        Instruction(LocalGet, 1),
-                        Instruction(I32Sub),
-                        Instruction(LocalSet, 2),
-                        Instruction(I32Const, 0),
-                        Instruction(LocalSet, 3),
-                        Instruction(Block, BlockArgs(-64)),
-                        Instruction(LocalGet, 3)]
-Compute_stack_memory[6].args.instrs = [Instruction(Loop, BlockArgs(-64))]
-Compute_stack_memory[6].args.instrs[0].args.instrs = [Instruction(LocalGet, 0),
-                                                      Instruction(I32Const, 4),
-                                                      Instruction(I32Sub),
-                                                      Instruction(LocalSet, 0),
-                                                      Instruction(LocalGet, 0),
-                                                      Instruction(LocalGet, 2),
-                                                      Instruction(I32LtS),
-                                                      Instruction(BrIf, 1),
-                                                      Instruction(LocalGet, 0),
-                                                      Instruction(I32Load, MemArg(2, 0)),
-                                                      Instruction(LocalGet, 3),
-                                                      Instruction(I32Add),
-                                                      Instruction(LocalSet, 3),
-                                                      Instruction(Br, 0)]
-Compute_stack_memory_functype = FuncType(0x60, [ValTypeI32, ValTypeI32], [ValTypeI32])
-Compute_stack_memory_locals_val = [Locals(2, ValTypeI32)]

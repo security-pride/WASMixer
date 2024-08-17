@@ -3,12 +3,11 @@ import struct
 
 from BREWasm.parser.module import SecDataCountID
 from leb128 import LEB128U, LEB128S
-from shutil import copyfile
 from WASMixer.parser import reader
-from WASMixer.parser.instruction import Instruction
+from WASMixer.parser.instruction import *
 from WASMixer.parser.module import *
 from WASMixer.parser.opcodes import *
-from WASMixer.parser.types import val_type_to_str, GlobalType
+from WASMixer.parser.types import *
 
 
 class ModifyBinary:
@@ -35,15 +34,10 @@ class ModifyBinary:
             self.module = module
             self.module.path = path
 
-    def emit_binary(self, path):
+    def emit_binary(self):
         file_path = self.module.path
 
-        if os.path.isfile(path):
-            if not os.path.samefile(self.module.path, path):
-                os.remove(path)
-
-        file_path = path
-        with open(path, "wb+") as f:
+        with open(file_path, "wb+") as f:
             magic_version_number = struct.pack("II", self.module.magic, self.module.version)
             f.write(magic_version_number)
             f.close()
@@ -60,8 +54,6 @@ class ModifyBinary:
         self.modify_elem_section(self.module.elem_sec, file_path)
         self.modify_code_section(self.module.code_sec, file_path)
         self.modify_data_section(self.module.data_sec, file_path)
-
-
 
     def get_import_func_list(self):
         import_func_list = []
@@ -627,8 +619,8 @@ class ModifyBinary:
             file_bytes = f.read()
             file_new_bytes = file_bytes[
                              :self.module.section_range[SecStartID].start] + start_section_bytes + file_bytes[
-                                                                                                     self.module.section_range[
-                                                                                                         SecStartID].end:]
+                                                                                                   self.module.section_range[
+                                                                                                       SecStartID].end:]
             change = len(start_section_bytes) - (
                     self.module.section_range[SecStartID].end - self.module.section_range[SecStartID].start)
 
@@ -739,8 +731,8 @@ class ModifyBinary:
             file_bytes = f.read()
             file_new_bytes = file_bytes[
                              :self.module.section_range[SecDataCountID].start] + datacount_section_bytes + file_bytes[
-                                                                                                     self.module.section_range[
-                                                                                                         SecDataCountID].end:]
+                                                                                                           self.module.section_range[
+                                                                                                               SecDataCountID].end:]
             change = len(datacount_section_bytes) - (
                     self.module.section_range[SecDataCountID].end - self.module.section_range[SecDataCountID].start)
 
@@ -834,7 +826,6 @@ class ModifyBinary:
             f = open(file_path, "r+b")
         else:
             f = open(file_path, "w+b")
-
 
         file_bytes = f.read()
         file_new_bytes = file_bytes[:self.module.section_range[SecTypeID].start] + type_section_bytes + file_bytes[

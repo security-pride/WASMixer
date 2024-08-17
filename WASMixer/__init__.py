@@ -34,9 +34,8 @@ class WASMixer:
                     if len(func.expr) <= 10 or len(func.expr) <= block_num:
                         continue
 
-                    flattened_instrs = self.code_obfuscator.instr_flatten(func.expr, block_num,
-                                                                          self.code_obfuscator.get_internal_functype(
-                                                                              func_id), func_id)
+                    functype = self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[func_id]]
+                    flattened_instrs = self.code_obfuscator.instr_flatten(func.expr, block_num, functype, func_id)
                     self.code_obfuscator.wasm_binary.module.code_sec[func_id].expr = flattened_instrs
 
             else:
@@ -46,9 +45,8 @@ class WASMixer:
                 if len(func_expr) <= 10 or len(func_expr) <= split_num:
                     return
 
-                flattened_instrs = self.code_obfuscator.instr_flatten(func_expr, split_num,
-                                                                      self.code_obfuscator.get_internal_functype(
-                                                                          inner_func_id), inner_func_id)
+                functype = self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[inner_func_id]]
+                flattened_instrs = self.code_obfuscator.instr_flatten(func_expr, split_num, functype, inner_func_id)
                 self.code_obfuscator.wasm_binary.module.code_sec[inner_func_id].expr = flattened_instrs
 
 
@@ -105,15 +103,10 @@ class WASMixer:
             collatz_locals_val = [Locals(1, ValTypeI32)]
             collatz_func_id = self.code_obfuscator.wasm_binary.add_function(collatz_functype, collatz_locals_val,
                                                                             copy.deepcopy(collatz_instrs_template))
-            compute_stack_memory_func_id = self.code_obfuscator.wasm_binary.add_function(Compute_stack_memory_functype,
-                                                                                         Compute_stack_memory_locals_val,
-                                                                                         Compute_stack_memory)
-            if compute_stack_memory_func_id <= collatz_func_id:
-                collatz_func_id += 1
+
             if inner_func_id is None:
                 for func_id, func in enumerate(self.code_obfuscator.wasm_binary.module.code_sec):
-                    if (func_id + self.code_obfuscator.wasm_binary.get_import_func_num()) == collatz_func_id or (
-                            func_id + self.code_obfuscator.wasm_binary.get_import_func_num()) == compute_stack_memory_func_id:
+                    if (func_id + self.code_obfuscator.wasm_binary.get_import_func_num()) == collatz_func_id:
                         continue
 
                     block_num = split_num
@@ -122,11 +115,9 @@ class WASMixer:
                     if len(func.expr) <= 10 or len(func.expr) <= block_num:
                         continue
 
-                    flattened_instrs = self.code_obfuscator.instr_flatten(func.expr, block_num,
-                                                                          self.code_obfuscator.get_internal_functype(
-                                                                              func_id),
-                                                                          func_id, collatz_func_id,
-                                                                          compute_stack_memory_func_id)
+                    functype = self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[func_id]]
+                    flattened_instrs = self.code_obfuscator.instr_flatten(func.expr, block_num, functype,
+                                                                          func_id, collatz_func_id)
                     self.code_obfuscator.wasm_binary.module.code_sec[func_id].expr = flattened_instrs
 
 
@@ -136,11 +127,10 @@ class WASMixer:
                     split_num = int(len(func_expr) / 10)
                 if len(func_expr) <= 10 or len(func_expr) <= split_num:
                     return
-                flattened_instrs = self.code_obfuscator.instr_flatten(func_expr, split_num,
-                                                                      self.code_obfuscator.get_internal_functype(
-                                                                          inner_func_id),
-                                                                      inner_func_id, collatz_func_id,
-                                                                      compute_stack_memory_func_id)
+
+                functype = self.wasm_binary.module.type_sec[self.wasm_binary.module.func_sec[inner_func_id]]
+                flattened_instrs = self.code_obfuscator.instr_flatten(func_expr, split_num, functype,
+                                                                      inner_func_id, collatz_func_id)
                 self.code_obfuscator.wasm_binary.module.code_sec[inner_func_id].expr = flattened_instrs
 
     def alias_disruption(self, collatz=False):

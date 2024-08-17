@@ -13,6 +13,7 @@ def obfuscate_benchmark_flatten():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.code_flatten()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def obfuscate_benchmark_alias_disruption():
@@ -23,6 +24,7 @@ def obfuscate_benchmark_alias_disruption():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.alias_disruption()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def obfuscate_benchmark_nameOB():
@@ -33,6 +35,7 @@ def obfuscate_benchmark_nameOB():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.name_obfuscation()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def obfuscate_benchmark_memoryOB():
@@ -42,8 +45,8 @@ def obfuscate_benchmark_memoryOB():
             wasm_path = os.path.join(path, dir_name)
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
-
                 obfuscator.memory_obfuscation(key=0)
+                obfuscator.wasm_binary.emit_binary()
 
 
 def manticore_flatten():
@@ -54,6 +57,7 @@ def manticore_flatten():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.code_flatten()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def manticore_alias_disruption():
@@ -64,6 +68,7 @@ def manticore_alias_disruption():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.alias_disruption()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def manticore_memoryOB():
@@ -75,6 +80,7 @@ def manticore_memoryOB():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.memory_obfuscation(key=0)
+                obfuscator.wasm_binary.emit_binary()
 
 
 def manticore_nameOB():
@@ -85,6 +91,7 @@ def manticore_nameOB():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.name_obfuscation()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def manticore_btree_flatten():
@@ -95,6 +102,7 @@ def manticore_btree_flatten():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.code_flatten()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def manticore_btree_alias_disruption():
@@ -105,6 +113,7 @@ def manticore_btree_alias_disruption():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.alias_disruption()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def btree_flatten():
@@ -115,6 +124,7 @@ def btree_flatten():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.code_flatten(split_num=2, collatz=True)
+                obfuscator.wasm_binary.emit_binary()
 
                 wasm2wat = sh.Command('wasm2wat')
                 flag = [wasm_path, "-o", wasm_path.split(".wasm")[0] + ".wat"]
@@ -141,6 +151,7 @@ def btree_nameOB():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.name_obfuscation()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def btree_memoryOB():
@@ -152,6 +163,7 @@ def btree_memoryOB():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.memory_obfuscation(key=0)
+                obfuscator.wasm_binary.emit_binary()
 
 
 def btree_alias_disruption():
@@ -162,6 +174,7 @@ def btree_alias_disruption():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.alias_disruption(True)
+                obfuscator.wasm_binary.emit_binary()
 
                 wasm2wat = sh.Command('wasm2wat')
                 flag = [wasm_path, "-o", wasm_path.split(".wasm")[0] + ".wat"]
@@ -188,6 +201,7 @@ def realworld_flatten():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.code_flatten()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def realworld_flatten_collatz2():
@@ -198,6 +212,7 @@ def realworld_flatten_collatz2():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.code_flatten(split_num=2, collatz=True)
+                obfuscator.wasm_binary.emit_binary()
 
 
 def realworld_alias_disruption():
@@ -208,6 +223,7 @@ def realworld_alias_disruption():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.alias_disruption()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def realworld_alias_disruption_collatz():
@@ -218,6 +234,7 @@ def realworld_alias_disruption_collatz():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.alias_disruption(True)
+                obfuscator.wasm_binary.emit_binary()
 
 
 def realworld_nameOB():
@@ -228,6 +245,7 @@ def realworld_nameOB():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.name_obfuscation()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def realworld_memoryOB():
@@ -238,6 +256,7 @@ def realworld_memoryOB():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.memory_obfuscation(key=0)
+                obfuscator.wasm_binary.emit_binary()
 
 
 def mining_memory_obfuscation():
@@ -248,6 +267,7 @@ def mining_memory_obfuscation():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.memory_obfuscation()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def mining_name_obfuscation():
@@ -258,6 +278,7 @@ def mining_name_obfuscation():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.name_obfuscation()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def mining_name_memory_obfuscation():
@@ -270,6 +291,7 @@ def mining_name_memory_obfuscation():
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.memory_obfuscation(key=0)
                 obfuscator.name_obfuscation()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def mining_flatten():
@@ -280,6 +302,7 @@ def mining_flatten():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.code_flatten()
+                obfuscator.wasm_binary.emit_binary()
 
 
 def mining_call():
@@ -290,6 +313,7 @@ def mining_call():
             if wasm_path.split(".")[-1] == "wasm":
                 obfuscator = WASMixer(wasm_path)
                 obfuscator.alias_disruption()
+                obfuscator.wasm_binary.emit_binary()
 
 
 if __name__ == "__main__":

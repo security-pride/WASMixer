@@ -171,7 +171,7 @@ def code_block_splitting(binary, instr_list, split_num, func_id):
             else:
                 raise Exception("error")
 
-    return basic_blocks
+    return basic_blocks, new_local_i32, new_local_i64, new_local_f32, new_local_f64
 
 def add_table_funcref_limits(binary, num):
     """
