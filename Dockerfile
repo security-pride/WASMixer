@@ -53,7 +53,7 @@ RUN chmod +x /start.sh
 CMD ["/start.sh"]
 
 
-COPY WASMaker/ /home/${USER}/${WORKDIR}/
+COPY WASMixer/ /home/${USER}/${WORKDIR}/
 
 # set python path
 ENV PYTHONPATH="/home/ubuntu:${PYTHONPATH}"
