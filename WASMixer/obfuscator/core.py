@@ -457,7 +457,7 @@ class CodeObfuscator:
             if _ not in [decrypten_load_funcid - import_func_num, encrypten_store_funcid - import_func_num]:
                 self.hook_load_store_instr(code.expr, decrypten_load_funcid, encrypten_store_funcid)
 
-        self.wasm_binary.emit_binary(self.wasm_binary.module.path)
+        self.wasm_binary.emit_binary()
 
     def hook_load_store_instr(self, instrs, decrypten_load_funcid, encrypten_store_funcid):
         for _, i in enumerate(instrs):

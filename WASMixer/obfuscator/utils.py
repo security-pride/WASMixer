@@ -5,7 +5,7 @@ from WASMixer import *
 from WASMixer.interpreter.mini_interpreter import MiniInterpreter
 from WASMixer.parser.opcodes_stack import stack_change
 from WASMixer.rewriter.modify_binary import *
-
+from WASMixer.obfuscator.instruction_blocks import *
 
 def get_instrs_max_stack_depth(binary, instr_list):
     """
